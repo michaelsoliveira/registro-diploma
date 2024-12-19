@@ -4,8 +4,8 @@ class Conexao {
 
 	public $conexao;
 	private $servidor = "localhost";
-	private $banco = "consulta_certificado";
-	private $usuario = "root";
+	private $banco = "registro";
+	private $usuario = "postgres";
 	private $senha = "";
 	private $porta = "5432";
 
