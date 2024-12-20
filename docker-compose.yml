@@ -1,0 +1,165 @@
+services:
+  php:
+    container_name: php8
+    build:
+      context: .
+      dockerfile: ./php/Dockerfile
+    environment:
+      DATABASE_URL: pgsql:host=${PG_HOST};port=${PGPORT};dbname=${POSTGRES_DBNAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - 8080:80
+    volumes:
+      - ./application:/var/www/html
+    networks:
+      - stack
+    depends_on:
+      - postgres  
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4:7
+    restart: unless-stopped
+    ports:
+      - "${PGADMIN_PORT}:80"
+    depends_on:
+      - postgres
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_ROOT_USER}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    volumes:
+      - data_pgadmin:/var/lib/pgadmin
+    networks:
+      - stack
+    profiles:
+      - development
+      - alpha
+      - beta
+
+  backup:
+    image: postgres
+    environment:
+      PGUSER: ${POSTGRES_USER}
+      POSTGRES_USER: ${POSTGRES_USER}
+    restart: "no"
+    links:
+      - postgres
+    volumes:
+      - data_backup:/backup
+    networks:
+      - stack
+    command: >
+      sh -c  "set -ex &&
+        cd /backup &&
+        export PGHOST=postgres &&
+        export BACKUP_PGDB=$$(date +'%Y_%m_%d_%H_%M_%S')_${APP_NAME}.dump &&
+        PGPASSWORD=${POSTGRES_PASSWORD} pg_dump --file ""$$BACKUP_PGDB"" -p ${PGPORT} --format=p --encoding=UTF8 --no-owner --no-privileges --clean --if-exists --verbose ""${APP_NAME}"" &&
+        tar -czf $$BACKUP_PGDB.tar.gz $$BACKUP_PGDB &&
+        rm -rf $$BACKUP_PGDB"
+    profiles:
+      - cli
+
+  restore:
+    image: postgres
+    environment:
+      PGUSER: ${POSTGRES_USER}
+      POSTGRES_USER: ${POSTGRES_USER}
+    restart: "no"
+    links:
+      - postgres
+    depends_on:
+      - postgres
+    volumes:
+      - data_backup:/backup
+    networks:
+      - stack
+    command: >
+      sh -c  'set -ex &&
+        cd /backup &&
+        export PGHOST=postgres &&
+        export FILE_TO_RESTORE=${BACKUP_FILE_TO_RESTORE:-no_file_to_restore} &&
+        tar -zxf $$FILE_TO_RESTORE &&
+        BACKUP_PGDB=$$FILE_TO_RESTORE &&
+        export BACKUP_PGDB=$${BACKUP_PGDB%".tar.gz"} &&
+        PGPASSWORD=${POSTGRES_PASSWORD} dropdb -U ${POSTGRES_USER} -p ${PGPORT} ""${APP_NAME}"" &&
+        PGPASSWORD=${POSTGRES_PASSWORD} createdb -U ${POSTGRES_USER} -p ${PGPORT} --encoding UTF8 --locale en_US.utf8 ""${APP_NAME}""  &&
+        PGPASSWORD=${POSTGRES_PASSWORD} psql -U ${POSTGRES_USER} -p ${PGPORT} -d ""${APP_NAME}"" < $$BACKUP_PGDB &&
+        rm -rf $$BACKUP_PGDB'
+    profiles:
+      - cli
+
+  sanitize:
+    image: postgres
+    environment:
+      PGUSER: ${POSTGRES_USER}
+      POSTGRES_USER: ${POSTGRES_USER}
+    restart: "no"
+    depends_on:
+      - postgres
+    links:
+      - postgres
+    volumes:
+      - data_backup:/backup
+    networks:
+      - stack
+    command: >
+      sh -c  'set -ex &&
+        export PGHOST=postgres &&
+        PGPASSWORD=${POSTGRES_PASSWORD} vacuumdb --analyze ""${APP_NAME}"" --port=${PGPORT} &&
+        PGPASSWORD=${POSTGRES_PASSWORD} reindexdb ""${APP_NAME}"" --port=${PGPORT}'
+    profiles:
+      - cli
+
+  nginx:
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile
+    ports:
+      - "80:80"
+    networks:
+      - stack
+    volumes:
+      - ./application/:/var/www/html
+      - ./logs/nginx:/var/log/nginx
+    container_name: nginx
+    
+  postgres:
+    image: postgres
+    environment:
+      PGUSER: ${POSTGRES_USER}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${APP_NAME}
+      PGPORT: ${PGPORT}
+    restart: unless-stopped
+    expose:
+      - 5432
+    ports:
+      - 5432:5432
+    volumes:
+      - data_pgdir:/var/lib/postgresql/data
+    networks:
+      - stack
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  data_backup:
+    name: ${APP_NAME}_backup
+    external: true
+
+  data_pgdir:
+    name: ${POSTGRES_VOL}
+    external: true
+
+  data_pgadmin:
+    name: ${PGADMIN_VOL}
+    external: true
+
+networks:
+  stack:
+    external: true
+    name: ${APP_NAME}_network
