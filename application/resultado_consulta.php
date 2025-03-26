@@ -77,10 +77,10 @@ if(isset($_POST['consultar']) AND !empty($_POST['c1']) AND !empty($_POST['c2']))
    <span><?php echo date("d/m/Y", strtotime($retorno['data_registro_diploma'])) ?></span> <br>
 
    <span id="label">IDENTIFICAÇÃO DO NÚMERO DE EXPEDIÇÃO: </span> 
-   <span><?php echo date("d/m/Y", strtotime($retorno['identificacao_numero_expedicao'])) ?></span> <br>
+   <span><?php echo $retorno['identificacao_numero_expedicao']; ?></span> <br>
 
    <span id="label">IDENTIFICAÇÃO DO NÚMERO DE REGISTRO: </span>  
-   <span><?php echo date("d/m/Y", strtotime($retorno['identificacao_numero_registro'])) ?></span> <br>
+   <span><?php echo $retorno['identificacao_numero_registro']; ?></span> <br>
 
    <span id="label">NÚMERO DO PROCESSO: </span>  
    <span><?php echo $retorno['numero_processo'] ?></span> <br>
