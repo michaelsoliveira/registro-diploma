@@ -82,8 +82,8 @@ if(isset($_POST['consultar']) AND !empty($_POST['c1']) AND !empty($_POST['c2']))
    <span id="label">IDENTIFICAÇÃO DO NÚMERO DE REGISTRO: </span>  
    <span><?php echo date("d/m/Y", strtotime($retorno['identificacao_numero_registro'])) ?></span> <br>
 
-   <span id="label">DATA DE PUBLICAÇÃO DAS INFORMAÇÕES DO REGISTRO DO DIPLOMA NO DOU: </span>  
-   <span><?php echo $retorno['data_publicacao_dou'] ?></span> <br>
+   <span id="label">NÚMERO DO PROCESSO: </span>  
+   <span><?php echo $retorno['numero_processo'] ?></span> <br>
 
    <hr>
 
