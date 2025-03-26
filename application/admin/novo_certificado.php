@@ -85,8 +85,8 @@ if(isset($_POST['salvar'])) {
        <label class="mt-2">IDENTIFICAÇÃO DO NÚMERO DE REGISTRO</label>
        <input type="text" name="c11" class="form-control">
 
-       <label class="mt-2">DATA DE PUBLICAÇÃO DAS INFORMAÇÕES DO REGISTRO DO DIPLOMA NO DOU</label>
-       <input type="date" name="c12" class="form-control">
+       <label class="mt-2">NÚMERO DO PROCESSO</label>
+       <input type="text" name="c12" class="form-control">
 
        <button class="btn btn-success mt-2 mb-4" name="salvar">Salvar</button>
       </form>

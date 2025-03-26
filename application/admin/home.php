@@ -32,7 +32,10 @@ if(isset($_SESSION['estado']) AND $_SESSION['estado'] != 'logado') {
           </li>
           <li class="nav-item">
             <a class="nav-link active" href="configuracoes.php"><i class="fas fa-cogs"></i> CONFIGURAÇÕES</a>
-          </li>     
+          </li>   
+          <li class="nav-item">
+            <a class="nav-link active" href="importacao.php"><i class="fas fa-cogs"></i> Importar Dados</a>
+          </li>    
         </ul>
 
         <div align="right">

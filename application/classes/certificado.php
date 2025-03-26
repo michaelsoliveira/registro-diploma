@@ -19,7 +19,7 @@ class Certificado {
 		$query = "
 		INSERT INTO 
 		certificados
-		(nome_diplomado, cpf_diplomado, nome_codigo_emec_cs, nome_codigo_emec_iep, nome_codigo_emec_ird, data_ingresso_curso, data_conclusao_curso, data_expedicao_diploma, data_registro_diploma, identificacao_numero_expedicao, identificacao_numero_registro, data_publicacao_dou) 
+		(nome_diplomado, cpf_diplomado, nome_codigo_emec_cs, nome_codigo_emec_iep, nome_codigo_emec_ird, data_ingresso_curso, data_conclusao_curso, data_expedicao_diploma, data_registro_diploma, identificacao_numero_expedicao, identificacao_numero_registro, numero_processo) 
 		VALUES(:c1, :c2, :c3, :c4, :c5, :c6, :c7, :c8, :c9, :c10, :c11, :c12)";
 
 		$stmt = $this->conexao->prepare($query);
@@ -47,7 +47,7 @@ class Certificado {
 		UPDATE  
 		certificados
 		SET
-		nome_diplomado = :c1, cpf_diplomado = :c2, nome_codigo_emec_cs = :c3, nome_codigo_emec_iep = :c4, nome_codigo_emec_ird = :c5, data_ingresso_curso = :c6, data_conclusao_curso = :c7, data_expedicao_diploma = :c8, data_registro_diploma = :c9, identificacao_numero_expedicao = :c10, identificacao_numero_registro = :c11, data_publicacao_dou = :c12 
+		nome_diplomado = :c1, cpf_diplomado = :c2, nome_codigo_emec_cs = :c3, nome_codigo_emec_iep = :c4, nome_codigo_emec_ird = :c5, data_ingresso_curso = :c6, data_conclusao_curso = :c7, data_expedicao_diploma = :c8, data_registro_diploma = :c9, identificacao_numero_expedicao = :c10, identificacao_numero_registro = :c11, numero_processo = :c12 
 		WHERE id_certificado = :id";
 
 		$stmt = $this->conexao->prepare($query);
