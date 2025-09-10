@@ -1,8 +1,13 @@
 <?php
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
-    $file = $_FILES['csv_file']['name'];
+    $tmpName = $_FILES['csv_file']['tmp_name'];
 
-    if (!file_exists($file)) {
+    // Converte para UTF-8
+    $conteudo = file_get_contents($tmpName);
+    $conteudoUtf8 = mb_convert_encoding($conteudo, 'UTF-8', 'ISO-8859-1');
+    file_put_contents($tmpName, $conteudoUtf8);
+
+    if (!file_exists($tmpName)) {
         die("Erro: Arquivo não encontrado.");
     }
 
@@ -13,53 +18,47 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
                 [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
             );
 
-        // Nome da tabela no banco de dados
         $tabela = "certificados";
 
-        // Tenta usar o comando COPY para importação rápida
-        try {
-            $pdo->exec("COPY $tabela(
-            nome_diplomado, 
-            cpf_diplomado, 
-            nome_codigo_emec_cs, 
-            nome_codigo_emec_iep, 
-            nome_codigo_emec_ird, 
-            data_ingresso_curso, 
-            data_conclusao_curso,
-            data_expedicao_diploma,
-            data_registro_diploma,
-            identificacao_numero_expedicao,
-            identificacao_numero_registro,
-            numero_processo) FROM '$file' WITH CSV HEADER DELIMITER ';'");
-            echo "Importação realizada com sucesso via COPY.";
-        } catch (PDOException $e) {
-            echo "Erro com COPY: " . $e->getMessage() . " Tentando INSERT...<br><br>";
-            
-            // Alternativa com INSERT se COPY não for permitido
-            $handle = fopen($file, "r");
-            if ($handle !== false) {
-                $columns = fgetcsv($handle, 1000, ";");
-                $columns[0] = preg_replace('/\x{FEFF}/u', '', $columns[0]);
-                $table = "certificados";
-                $columnsSql = implode(", ", $columns);
-                $placeholders = implode(", ", array_fill(0, count($columns), "?"));
-                $query = "INSERT INTO $table ($columnsSql) VALUES ($placeholders)";
+        $handle = fopen($tmpName, "r");
+        if ($handle !== false) {
+            $columns = fgetcsv($handle, 1000, ";");
+            $columns[0] = preg_replace('/\x{FEFF}/u', '', $columns[0]);
 
-                $stmt = $pdo->prepare($query);
-                $dateColumns = ["data_ingresso_curso", "data_conclusao_curso", "data_expedicao_diploma", "data_registro_diploma"];
-                $dataPadrao = "2000-01-01";
-                while (($data = fgetcsv($handle, 1000, ";")) !== false) {
-                    foreach ($columns as $index => $coluna) {
-                        // Se a coluna for do tipo DATE e o valor estiver vazio, definir a data padrão
-                        if (in_array($coluna, $dateColumns) && (empty($data[$index]) || $data[$index] == "NULL")) {
+            $columnsSql   = implode(", ", $columns);
+            $placeholders = implode(", ", array_fill(0, count($columns), "?"));
+            $query = "INSERT INTO $tabela ($columnsSql) VALUES ($placeholders)";
+            $stmt = $pdo->prepare($query);
+
+            $dateColumns = ["data_ingresso_curso", "data_conclusao_curso", "data_expedicao_diploma", "data_registro_diploma"];
+            $dataPadrao  = "2000-01-01";
+
+            while (($data = fgetcsv($handle, 1000, ";")) !== false) {
+                $data = array_pad($data, count($columns), null); // garante que todas colunas existam
+                foreach ($columns as $index => $coluna) {
+                    if (in_array($coluna, $dateColumns)) {
+                        $valor = trim($data[$index]);
+
+                        if (empty($valor) || strtoupper($valor) === "NULL") {
+                            // usa data padrão
                             $data[$index] = $dataPadrao;
+                        } else {
+                            // converte de DD/MM/YYYY → YYYY-MM-DD
+                            $dt = DateTime::createFromFormat("d/m/Y", $valor);
+                            if ($dt !== false) {
+                                $data[$index] = $dt->format("Y-m-d");
+                            } else {
+                                // se não conseguir converter, define padrão para evitar erro
+                                $data[$index] = $dataPadrao;
+                            }
                         }
                     }
-                    $stmt->execute($data);
                 }
-                fclose($handle);
-                echo "Importação realizada com sucesso via INSERT.";
+                $stmt->execute($data);
             }
+            fclose($handle);
+
+            echo "Importação realizada com sucesso via INSERT.";
         }
     } catch (PDOException $e) {
         echo "Erro de conexão: " . $e->getMessage();
