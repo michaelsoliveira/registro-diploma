@@ -123,9 +123,7 @@ services:
     volumes:
       - ./application/:/var/www/html
       - ./logs/nginx:/var/log/nginx
-<<<<<<< HEAD
-    container_name: nginx_gateway
-=======
+
       - ./certbot/www:/var/www/certbot
       - ./certbot/conf:/etc/letsencrypt
     container_name: nginx_unifap
@@ -139,7 +137,6 @@ services:
     command: certonly --webroot -w /var/www/certbot --force-renewal --email michaelsoliveira@gmail.com -d consultaregistro.unifap.br --agree-tos
     networks:
       - stack
->>>>>>> fd42dcba966664c9a6e7ef95f90c528515235419
     
   postgres:
     image: postgres
